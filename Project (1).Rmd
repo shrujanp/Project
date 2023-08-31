@@ -1,0 +1,319 @@
+---
+title: "Project"
+author: "Karthik, Shrujan And Shubham"
+date: "2022-12-02"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse) 
+library(readr)
+library(dplyr)
+library(magrittr)
+library(Metrics)
+library(pROC)
+library(precrec) 
+library(ROSE) 
+library(nnet) 
+library(randomForest)
+```
+
+
+```{r}
+data = read.csv("/Users/ricky/Downloads/Archive/insurance_claims.csv")
+data = data[,c(-25,-40)] # delete variables
+data = data %>% mutate_if(is.character,as.factor)
+data = as.data.frame(data)
+round(prop.table(table(data$fraud_reported)),2)
+```
+
+
+#months_as_customer - continuous data - with no outliers almost normal distribution(right skew)
+```{r}
+
+summary(data$months_as_customer)
+boxplot(data$months_as_customer)
+hist(data$months_as_customer)
+ggplot(data)+geom_bar(aes(x=months_as_customer, fill=fraud_reported))
+```
+
+#age - continous data - Mean almost equal to median - close to normal distribution(right skew)
+```{r}
+summary(data)
+summary(data$age)
+boxplot(data$age)
+hist(data$age)
+ggplot(data)+geom_bar(aes(x=age, fill=fraud_reported))
+
+
+```
+
+#policy_number - continous data - Mean almost equal to median - close to normal distribution(right skew)
+```{r}
+summary(data$policy_number)
+boxplot(data$policy_number)
+hist(data$policy_number)
+ggplot(data)+geom_bar(aes(x=policy_number, fill=fraud_reported))
+
+```
+
+#policy_bind_date - discrete - not apt
+```{r}
+summary(data$policy_bind_date)
+plot(data$policy_bind_date)
+```
+
+#state - discrete - to understand which state has more 
+```{r}
+summary(data$policy_state)
+plot(data$policy_state)
+ggplot(data)+geom_bar(aes(x=policy_state, fill=as.factor(fraud_reported)))
+
+```
+
+#policy_csl - discrete - which policy - 250/500 has been the usual policy
+```{r}
+summary(data$policy_csl)
+plot(data$policy_csl)
+ggplot(data)+geom_bar(aes(x=policy_csl, fill=as.factor(fraud_reported)))
+```
+
+#policy_deductable - continous - Close to normal with a right skew
+```{r}
+summary(data$policy_deductable)
+boxplot(data$policy_deductable)
+hist(data$policy_deductable)
+ggplot(data)+geom_bar(aes(x=policy_deductable, fill=fraud_reported))
+```
+
+
+#policy_annual_premium - Close to normal distribution with a left skew also has some outliers 
+```{r}
+summary(data$policy_annual_premium)
+boxplot(data$policy_annual_premium)
+hist(data$policy_annual_premium)
+ggplot(data)+geom_bar(aes(x=policy_annual_premium, fill=fraud_reported))
+```
+
+
+#umbrella_limit - here the median is 0. Outliers exist
+```{r}
+summary(data$umbrella_limit)
+boxplot(data$policy_annual_premium)
+hist(data$policy_annual_premium)
+ggplot(data)+geom_bar(aes(x=umbrella_limit, fill=fraud_reported))
+```
+
+#insured_zip - This is a right skew with no outliers- 
+```{r}
+
+summary(data$insured_zip)
+boxplot(data$insured_zip)
+hist(data$insured_zip)
+ggplot(data)+geom_bar(aes(x=insured_zip, fill=fraud_reported))
+```
+#insured_sex - Discrete - Females claimed more.
+```{r}
+summary(data$insured_sex)
+plot(data$insured_sex)
+ggplot(data)+geom_bar(aes(x=insured_sex, fill=as.factor(fraud_reported)))
+```
+#insured_education_level - Discrete - JD and high school have claimed more 
+```{r}
+summary(data$insured_education_level)
+plot(data$insured_education_level)
+ggplot(data)+geom_bar(aes(x=insured_education_level, fill=as.factor(fraud_reported)))
+
+```
+
+#occupation - discrete - Which occupation usually claims more. 
+```{r}
+summary(data$insured_occupation)
+plot(data$insured_occupation)
+ggplot(data)+geom_bar(aes(x=insured_occupation, fill=as.factor(fraud_reported)))
+
+```
+
+#insured_hobbies - discrete - hobbies of claimed people. - Not necessary.
+```{r}
+
+summary(data$insured_hobbies)
+plot(data$insured_hobbies)
+ggplot(data)+geom_bar(aes(x=insured_hobbies, fill=as.factor(fraud_reported)))
+```
+#insured_relationship - discrete - Helps to know dependencies.
+```{r}
+summary(data$insured_relationship)
+plot(data$insured_relationship) 
+ggplot(data)+geom_bar(aes(x=insured_relationship, fill=as.factor(fraud_reported)))
+
+```
+
+
+#capital.gains - continuos - with a median 0 and no outliers
+```{r}
+summary(data$capital.gains)
+boxplot(data$capital.gains) 
+hist(data$capital.gains)
+ggplot(data)+geom_bar(aes(x=capital.gains, fill=fraud_reported))
+```
+#capital.loss - continuous - Left skew with no outliers
+```{r}
+summary(data$capital.loss)
+boxplot(data$capital.loss) 
+hist(data$capital.loss)
+ggplot(data)+geom_bar(aes(x=capital.loss, fill=fraud_reported))
+```
+
+#incident_date  - discrete - may vary - not important
+```{r}
+summary(data$incident_date)
+plot(data$incident_date) 
+ggplot(data)+geom_bar(aes(x=incident_date, fill=as.factor(fraud_reported)))
+```
+
+#incident_type  - discrete - to know the what happened to the vehicle 
+```{r}
+
+summary(data$incident_type)
+plot(data$incident_type)
+ggplot(data)+geom_bar(aes(x=incident_type, fill=as.factor(fraud_reported)))
+```
+
+#collision type - with an unknown value about where it collided.
+```{r}
+summary(data$collision_type)
+plot(data$collision_type)
+ggplot(data)+geom_bar(aes(x=collision_type, fill=as.factor(fraud_reported)))
+```
+
+#incident_severity - discrete - About how bad the damage is:
+```{r}
+summary(data$incident_severity)
+plot(data$incident_severity)
+ggplot(data)+geom_bar(aes(x=incident_severity, fill=as.factor(fraud_reported)))
+
+```
+
+#authorities_contacted - if the autorities are contacted and which one.
+```{r}
+summary(data$authorities_contacted)
+plot(data$authorities_contacted)
+ggplot(data)+geom_bar(aes(x=authorities_contacted, fill=as.factor(fraud_reported)))
+```
+
+#incident_state - discrete - Which state has the incident occurred ? 
+```{r}
+summary(data$incident_state)
+plot(data$incident_state)
+ggplot(data)+geom_bar(aes(x=incident_state, fill=as.factor(fraud_reported)))
+```
+#incident_city - discrete - Which city has the incident occurred ? 
+```{r}
+summary(data$incident_city)
+plot(data$incident_city)
+ggplot(data)+geom_bar(aes(x=incident_city, fill=as.factor(fraud_reported)))
+```
+#number_of_vehicles_involved - Right skew with no outliers 
+```{r}
+summary(data$number_of_vehicles_involved)
+boxplot(data$number_of_vehicles_involved)
+hist(data$number_of_vehicles_involved)
+ggplot(data)+geom_bar(aes(x=number_of_vehicles_involved, fill=fraud_reported))
+```
+
+#property_damage - With an unknown value 
+```{r}
+summary(data$property_damage)
+plot(data$property_damage)
+ggplot(data)+geom_bar(aes(x=property_damage, fill=as.factor(fraud_reported)))
+```
+
+
+#Bodily_Injured - continuous - with no outliers and left skew.
+```{r}
+summary(data$bodily_injuries)
+boxplot(data$bodily_injuries)
+hist(data$bodily_injuries)
+ggplot(data)+geom_bar(aes(x=bodily_injuries, fill=fraud_reported))
+
+```
+
+#witnesses - continuous With a right skew with no outliers
+```{r}
+summary(data$witnesses)
+boxplot(data$witnesses)
+hist(data$witnesses)
+ggplot(data)+geom_bar(aes(x=witnesses, fill=fraud_reported))
+
+```
+#police_report_available - Discrete 
+```{r}
+summary(data$police_report_available)
+plot(data$police_report_available)
+ggplot(data)+geom_bar(aes(x=police_report_available, fill=as.factor(fraud_reported)))
+```
+
+#total_claim_amount - continuous - Left Skew with a few outliers
+```{r}
+summary(data$total_claim_amount)
+boxplot(data$total_claim_amount)
+hist(data$total_claim_amount)
+ggplot(data)+geom_bar(aes(x=total_claim_amount, fill=fraud_reported))
+```
+#injury_claim - continuous -with 0 outliers and a right skew
+```{r}
+summary(data$injury_claim)
+boxplot(data$injury_claim)
+hist(data$injury_claim)
+ggplot(data)+geom_bar(aes(x=injury_claim, fill=fraud_reported))
+
+
+```
+
+#property_claim -contunuius - Right skew with outliers
+```{r}
+summary(data$property_claim)
+boxplot(data$property_claim)
+hist(data$property_claim)
+
+ggplot(data)+geom_bar(aes(x=property_claim, fill=fraud_reported))
+
+```
+#vehicle_claim - continious - 0 outliers with a left skew
+```{r}
+summary(data$vehicle_claim)
+boxplot(data$vehicle_claim)
+hist(data$vehicle_claim)
+ggplot(data)+geom_bar(aes(x=vehicle_claim, fill=fraud_reported))
+```
+
+
+#auto_make - discrete - 
+```{r}
+summary(data$auto_make)
+plot(data$auto_make)
+ggplot(data)+geom_bar(aes(x=auto_make, fill=as.factor(fraud_reported)))
+
+```
+
+#auto_model - discrete - Which model is usually claimed
+```{r}
+summary(data$auto_model)
+plot(data$auto_model)
+ggplot(data)+geom_bar(aes(x=auto_model, fill=as.factor(fraud_reported)))
+
+```
+#auto_year - Perfect normal distribution with mean = median 
+```{r}
+
+summary(data$auto_year)
+boxplot(data$auto_year)
+hist(data$auto_year)
+ggplot(data)+geom_bar(aes(x=auto_year, fill=fraud_reported))
+
+```
